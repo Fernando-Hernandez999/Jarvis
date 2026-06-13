@@ -141,8 +141,8 @@
         }
 
         async function preguntarAGemini(preguntaUsuario) {
-            // DIRECCIÓN ENLACE ACTUALIZADA A V1 ESTABLE
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+            // SE ACTUALIZÓ LA URL CON EL MODELO -LATEST
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
             try {
                 const response = await fetch(url, {
                     method: "POST",
