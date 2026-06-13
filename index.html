@@ -3,26 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. - Modular v4.0</title>
-    <!-- Vinculamos el archivo de estilos externos -->
-    <link rel="stylesheet" href="style.css">
+    <title>J.A.R.V.I.S. - Sistema Central</title>
+    <style>
+        /* Diseño básico, limpio y que NO bloquea los controles */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0a0f1d;
+            color: #00f3ff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            background: #111a2e;
+            border: 1px solid #00f3ff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+        }
+        h1 { font-size: 24px; text-align: center; margin-bottom: 15px; letter-spacing: 2px; }
+        .console {
+            background: #050914;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 15px;
+            height: 250px;
+            overflow-y: auto;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .msg { margin-bottom: 10px; }
+        .user-text { color: #ffffff; }
+        .jarvis-text { color: #00f3ff; font-weight: bold; }
+        .system-text { color: #ffbb00; }
+        .error-text { color: #ff0055; font-weight: bold; }
+        .input-box { display: flex; gap: 10px; }
+        input[type="text"] {
+            flex-grow: 1;
+            background: #050914;
+            border: 1px solid #00f3ff;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 15px;
+            outline: none;
+        }
+        button {
+            background: #00f3ff;
+            color: #0a0f1d;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #ffffff; }
+        .reset-link { text-align: center; margin-top: 15px; font-size: 12px; color: #4a7a96; cursor: pointer; text-decoration: underline; }
+    </style>
 </head>
 <body>
 
     <div class="container">
         <h1>J.A.R.V.I.S.</h1>
-        <div class="subtitle">Núcleo Modular v4.0</div>
-        <div class="jarvis-arc"><div class="jarvis-arc-inner"></div></div>
         <div class="console" id="console"></div>
         <div class="input-box">
-            <input type="text" id="userInput" placeholder="Esperando configuración..." autocomplete="off">
+            <input type="text" id="userInput" placeholder="Cargando sistema..." autocomplete="off">
             <button id="sendBtn">Enviar</button>
         </div>
-        <div class="reset-link" id="resetBtn">Borrar API Key guardada</div>
+        <div class="reset-link" id="resetBtn">Borrar llaves guardadas</div>
     </div>
 
-    <!-- Cargamos los scripts de JavaScript: primero la voz y luego el cerebro -->
-    <script src="voz.js"></script>
-    <script src="script.js"></script>
+    <script>
+        // Todo el motor de Jarvis de vuelta en un solo lugar seguro
+        let API_KEY = "";
+        let ELEVEN_API_KEY = "";
+        let VOICE_ID = "";
+        
+        let pasoConfig = 1; // Control de pasos: 1 = Gemini, 2 = ElevenLabs, 3 = VoiceID, 0 = Listo
+
+        const consoleDiv = document.getElementById('console');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function logPantalla(texto, clase) {
+            const p = document.createElement('div');
+            p.className = `msg ${clase}`;
+            p.innerText = texto;
+            consoleDiv.appendChild(p);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        // MOTOR DE VOZ: Usa ElevenLabs si hay llaves, si no, usa el navegador básico gratis
+        async function hablar(texto) {
+            logPantalla("JARVIS: " + texto, "jarvis-text");
+
+            if (ELEVEN_API_KEY && VOICE_ID) {
+                const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "xi-api-key": ELEVEN_API_KEY },
+                        body: JSON.stringify({ text: texto, model_id: "eleven_multilingual_v2" })
+                    });
+                    if (response.ok) {
+                        const audioBlob = await response.blob();
+                        const audio = new Audio(URL.createObjectURL(audioBlob));
+                        audio.play();
+                        return;
+                    }
+                } catch (e) { /* Error de red en Eleven, cae al respaldo */ }
+            }
+
+            // Respaldo por defecto: Voz del navegador
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-MX';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function inicializarSistema() {
+            API_KEY = localStorage.getItem("jarvis_api_key");
+            ELEVEN_API_KEY = localStorage.getItem("eleven_api_key");
+            VOICE_ID = localStorage.getItem("eleven_voice_id");
+
+            if (API_KEY) {
+                pasoConfig = 0;
+                userInput.placeholder = "Hable con J.A.R.V.I.S...";
+                setTimeout(() => { hablar("Sistemas en línea, señor. ¿En qué puedo ayudarle?"); }, 500);
+            } else {
+                pasoConfig = 1;
+                userInput.placeholder = "Pegue su API Key de Gemini...";
+                logPantalla("SISTEMA: Ingrese la API Key de Google Gemini para iniciar.", "system-text");
+            }
+        }
+
+        async function preguntarAGemini(preguntaUsuario) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Actúa como J.A.R.V.I.S. de Iron Man. Habla en español, sé conciso y dirígete al usuario como 'señor'. Sin usar markdown. Pregunta: " + preguntaUsuario }] }]
+                    })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    logPantalla(`ERROR GOOGLE: ${data.error.message}`, "error-text");
+                } else if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    hablar(data.candidates[0].content.parts[0].text);
+                }
+            } catch (error) {
+                logPantalla("ERROR: Falla de conexión con los servidores.", "error-text");
+            }
+        }
+
+        function mandarComando() {
+            let texto = userInput.value.trim();
+            if (texto === "") return;
+
+            // Modo Configuración Paso a Paso
+            if (pasoConfig === 1) {
+                API_KEY = texto;
+                localStorage.setItem("jarvis_api_key", texto);
+                userInput.value = "";
+                pasoConfig = 2;
+                userInput.placeholder = "API Key de ElevenLabs (o escriba 'saltar')...";
+                logPantalla("SISTEMA: Key de Gemini guardada. Ingrese Key de ElevenLabs para voz real (o escriba 'saltar').", "system-text");
+                return;
+            }
+            if (pasoConfig === 2) {
+                userInput.value = "";
+                if (texto.toLowerCase() !== "saltar") {
+                    ELEVEN_API_KEY = texto;
+                    localStorage.setItem("eleven_api_key", texto);
+                    pasoConfig = 3;
+                    userInput.placeholder = "Pegue el Voice ID de Jarvis...";
+                    logPantalla("SISTEMA: Key de ElevenLabs guardada. Ingrese el Voice ID.", "system-text");
+                } else {
+                    pasoConfig = 0;
+                    userInput.placeholder = "Hable con J.A.R.V.I.S...";
+                    logPantalla("SISTEMA: Configuración terminada sin voz avanzada.", "system-text");
+                    hablar("Sistemas listos con voz local, señor.");
+                }
+                return;
+            }
+            if (pasoConfig === 3) {
+                VOICE_ID = texto;
+                localStorage.setItem("eleven_voice_id", texto);
+                userInput.value = "";
+                pasoConfig = 0;
+                userInput.placeholder = "Hable con J.A.R.V.I.S...";
+                logPantalla("SISTEMA: Configuración de voz completada con éxito.", "system-text");
+                hablar("Todos los sistemas de voz e inteligencia en línea, señor.");
+                return;
+            }
+
+            // Modo Chat Normal
+            logPantalla("TÚ: " + texto, "user-text");
+            userInput.value = "";
+            preguntarAGemini(texto);
+        }
+
+        resetBtn.addEventListener('click', () => {
+            localStorage.clear();
+            API_KEY = ""; ELEVEN_API_KEY = ""; VOICE_ID = "";
+            consoleDiv.innerHTML = "";
+            pasoConfig = 1;
+            userInput.placeholder = "Pegue su API Key de Gemini...";
+            logPantalla("SISTEMA: Memoria limpia. Ingrese la API Key de Gemini.", "system-text");
+        });
+
+        sendBtn.addEventListener('click', mandarComando);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') mandarComando(); });
+
+        window.onload = inicializarSistema;
+    </script>
 </body>
 </html>
