@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. - Sistema Autónomo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #020813;
+            color: #00f3ff;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(18, 24, 38, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 24, 38, 0.5) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 600px;
+            background: rgba(4, 14, 32, 0.75);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            text-shadow: 0 0 15px #00f3ff;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 11px;
+            color: #4a7a96;
+            letter-spacing: 3px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+        }
+
+        /* Hub Holográfico */
+        .jarvis-arc {
+            width: 120px;
+            height: 120px;
+            border: 2px solid rgba(0, 243, 255, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            position: relative;
+            animation: spin 10s linear infinite;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .jarvis-arc::before {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 2px dashed #00f3ff;
+            border-radius: 50%;
+            animation: spin-reverse 6s linear infinite;
+        }
+
+        .jarvis-arc-inner {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, #00f3ff 0%, rgba(0,243,255,0.2) 70%, transparent 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 20px #00f3ff;
+        }
+
+        /* Consola de Chat */
+        .console {
+            background: rgba(0, 10, 20, 0.6);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            padding: 15px;
+            width: 100%;
+            height: 220px;
+            overflow-y: auto;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+
+        .console::-webkit-scrollbar { width: 6px; }
+        .console::-webkit-scrollbar-thumb { background: rgba(0, 243, 255, 0.3); border-radius: 3px; }
+
+        .msg { margin-bottom: 10px; line-height: 1.4; }
+        .user-text { color: #ffffff; }
+        .jarvis-text { color: #00f3ff; font-weight: bold; }
+        .system-text { color: #ffbb00; font-style: italic; }
+        .error-text { color: #ff0055; font-weight: bold; }
+
+        /* Entrada de Comandos */
+        .input-box {
+            display: flex;
+            width: 100%;
+            background: rgba(0, 243, 255, 0.03);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 25px;
+            padding: 5px 5px 5px 20px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ffffff;
+            font-size: 15px;
+        }
+
+        button {
+            background: #00f3ff;
+            color: #020813;
+            border: none;
+            outline: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover { background: #ffffff; box-shadow: 0 0 15px #ffffff; }
+
+        /* Botón de reset secreto */
+        .reset-link {
+            margin-top: 15px;
+            font-size: 11px;
+            color: #4a7a96;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .reset-link:hover { color: #ff0055; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>J.A.R.V.I.S.</h1>
+        <div class="subtitle">Sistema Autónomo de Memoria</div>
+
+        <div class="jarvis-arc">
+            <div class="jarvis-arc-inner"></div>
+        </div>
+
+        <div class="console" id="console"></div>
+
+        <div class="input-box">
+            <input type="text" id="userInput" placeholder="Esperando configuración..." autocomplete="off">
+            <button id="sendBtn">Enviar</button>
+        </div>
+
+        <div class="reset-link" id="resetBtn">Borrar API Key guardada</div>
+    </div>
+
+    <script>
+        let API_KEY = ""; 
+        let esperandoKey = false;
+
+        const consoleDiv = document.getElementById('console');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function hablar(texto) {
+            window.speechSynthesis.cancel(); 
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = 'es-MX';
+            
+            const voices = window.speechSynthesis.getVoices();
+            for(let i = 0; i < voices.length; i++) {
+                if(voices[i].lang.includes('es') && (voices[i].name.includes('Male') || voices[i].name.includes('Google'))) {
+                    utterance.voice = voices[i];
+                    break;
+                }
+            }
+            window.speechSynthesis.speak(utterance);
+            logPantalla("JARVIS: " + texto, "jarvis-text");
+        }
+
+        function logPantalla(texto, clase) {
+            const p = document.createElement('div');
+            p.className = `msg ${clase}`;
+            p.innerText = texto;
+            consoleDiv.appendChild(p);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        // Comprobación inicial de la memoria del navegador
+        function inicializarSistema() {
+            const keyGuardada = localStorage.getItem("jarvis_api_key");
+
+            if (keyGuardada) {
+                API_KEY = keyGuardada;
+                esperandoKey = false;
+                userInput.placeholder = "Hable con J.A.R.V.I.S...";
+                setTimeout(() => { 
+                    hablar("Sistemas neuronales cargados desde la memoria local. Estoy listo, señor."); 
+                }, 800);
+            } else {
+                esperandoKey = true;
+                userInput.placeholder = "Pegue su API Key aquí y presione Enviar...";
+                logPantalla("SISTEMA: Memoria vacía. Por favor, introduzca su clave de Google AI Studio en la barra inferior para inicializar el núcleo del cerebro.", "system-text");
+            }
+        }
+
+        async function preguntarAGemini(preguntaUsuario) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+            const instrucciones = "Responde de manera concisa y educada, actuando como el asistente de inteligencia artificial J.A.R.V.I.S. de Iron Man. Dirígete al usuario como 'señor'. Evita respuestas largas y no uses asteriscos.";
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `${instrucciones}\nUsuario: ${preguntaUsuario}` }] }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Llave inválida o error de servidor");
+                }
+
+                const data = await response.json();
+                const respuestaIA = data.candidates[0].content.parts[0].text;
+                hablar(respuestaIA);
+            } catch (error) {
+                logPantalla("JARVIS: Error crítico. Los servidores centrales rechazaron la conexión. Es posible que la API Key sea incorrecta o esté incompleta.", "error-text");
+                hablar("Error de autenticación, señor. Por favor verifique su clave de acceso.");
+            }
+        }
+
+        function ejecutarComando() {
+            const texto = userInput.value.trim();
+            if (texto === "") return;
+
+            // Modo 1: Estamos guardando la llave por primera vez
+            if (esperandoKey) {
+                API_KEY = texto;
+                localStorage.setItem("jarvis_api_key", texto); // Se graba en la PC
+                userInput.value = "";
+                esperandoKey = false;
+                userInput.placeholder = "Hable con J.A.R.V.I.S...";
+                logPantalla("SISTEMA: Clave de acceso almacenada correctamente en el núcleo.", "system-text");
+                hablar("Llave sincronizada. Cerebro en línea. ¿En qué puedo ayudarlo hoy, señor?");
+                return;
+            }
+
+            // Modo 2: Funcionamiento normal con la IA
+            logPantalla("TÚ: " + texto, "user-text");
+            userInput.value = ""; 
+            preguntarAGemini(texto);
+        }
+
+        // Botón por si quieres cambiar la llave en el futuro
+        resetBtn.addEventListener('click', () => {
+            localStorage.removeItem("jarvis_api_key");
+            API_KEY = "";
+            esperandoKey = true;
+            consoleDiv.innerHTML = "";
+            userInput.placeholder = "Pegue su API Key aquí y presione Enviar...";
+            logPantalla("SISTEMA: Memoria del núcleo borrada. Ingrese una nueva llave.", "system-text");
+            hablar("Memoria reiniciada. Esperando nueva clave de acceso, señor.");
+        });
+
+        sendBtn.addEventListener('click', ejecutarComando);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') ejecutarComando();
+        });
+
+        window.onload = inicializarSistema;
+    </script>
+</body>
+</html>
