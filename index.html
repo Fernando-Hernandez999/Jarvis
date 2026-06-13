@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>J.A.R.V.I.S. - Sistema Central</title>
     <style>
-        /* Diseño básico, limpio y que NO bloquea los controles */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0a0f1d;
@@ -80,12 +79,11 @@
     </div>
 
     <script>
-        // Todo el motor de Jarvis de vuelta en un solo lugar seguro
         let API_KEY = "";
         let ELEVEN_API_KEY = "";
         let VOICE_ID = "";
         
-        let pasoConfig = 1; // Control de pasos: 1 = Gemini, 2 = ElevenLabs, 3 = VoiceID, 0 = Listo
+        let pasoConfig = 1;
 
         const consoleDiv = document.getElementById('console');
         const userInput = document.getElementById('userInput');
@@ -100,7 +98,6 @@
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
 
-        // MOTOR DE VOZ: Usa ElevenLabs si hay llaves, si no, usa el navegador básico gratis
         async function hablar(texto) {
             logPantalla("JARVIS: " + texto, "jarvis-text");
 
@@ -118,10 +115,9 @@
                         audio.play();
                         return;
                     }
-                } catch (e) { /* Error de red en Eleven, cae al respaldo */ }
+                } catch (e) { }
             }
 
-            // Respaldo por defecto: Voz del navegador
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(texto);
             utterance.lang = 'es-MX';
@@ -145,7 +141,8 @@
         }
 
         async function preguntarAGemini(preguntaUsuario) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+            // DIRECCIÓN ENLACE ACTUALIZADA A V1 ESTABLE
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
             try {
                 const response = await fetch(url, {
                     method: "POST",
@@ -169,7 +166,6 @@
             let texto = userInput.value.trim();
             if (texto === "") return;
 
-            // Modo Configuración Paso a Paso
             if (pasoConfig === 1) {
                 API_KEY = texto;
                 localStorage.setItem("jarvis_api_key", texto);
@@ -206,7 +202,6 @@
                 return;
             }
 
-            // Modo Chat Normal
             logPantalla("TÚ: " + texto, "user-text");
             userInput.value = "";
             preguntarAGemini(texto);
