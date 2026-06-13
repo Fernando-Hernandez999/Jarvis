@@ -95,7 +95,6 @@
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
 
-        // Sistema de voz directo del navegador, 100% gratis y sin límites
         function hablar(texto) {
             logPantalla("JARVIS: " + texto, "jarvis-text");
             window.speechSynthesis.cancel();
@@ -128,7 +127,7 @@
                         "Authorization": `Bearer ${GROQ_API_KEY}`
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192",
+                        model: "llama-3.1-8b-instant", // ACTUALIZADO AL MODELO NUEVO
                         messages: [
                             { role: "system", content: "Actúa exactamente como J.A.R.V.I.S., el asistente de Iron Man. Habla siempre en español, de forma muy concisa, educada y dirígete al usuario como 'señor'. Nunca uses formatos markdown como asteriscos o negritas." },
                             { role: "user", content: preguntaUsuario }
@@ -151,7 +150,6 @@
             let texto = userInput.value.trim();
             if (texto === "") return;
 
-            // Si aún no tenemos la llave de Groq
             if (necesitaKey) {
                 GROQ_API_KEY = texto;
                 localStorage.setItem("jarvis_groq_key", texto);
@@ -163,7 +161,6 @@
                 return;
             }
 
-            // Modo Chat Normal
             logPantalla("TÚ: " + texto, "user-text");
             userInput.value = "";
             preguntarAGroq(texto);
