@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. - Sistema Central</title>
+    <title>J.A.R.V.I.S. - Servidor Groq Directo</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -75,15 +75,12 @@
             <input type="text" id="userInput" placeholder="Cargando sistema..." autocomplete="off">
             <button id="sendBtn">Enviar</button>
         </div>
-        <div class="reset-link" id="resetBtn">Borrar llaves guardadas</div>
+        <div class="reset-link" id="resetBtn">Borrar llave guardada</div>
     </div>
 
     <script>
-        let API_KEY = "";
-        let ELEVEN_API_KEY = "";
-        let VOICE_ID = "";
-        
-        let pasoConfig = 1;
+        let GROQ_API_KEY = "";
+        let necesitaKey = true;
 
         const consoleDiv = document.getElementById('console');
         const userInput = document.getElementById('userInput');
@@ -98,26 +95,9 @@
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
 
-        async function hablar(texto) {
+        // Sistema de voz directo del navegador, 100% gratis y sin límites
+        function hablar(texto) {
             logPantalla("JARVIS: " + texto, "jarvis-text");
-
-            if (ELEVEN_API_KEY && VOICE_ID) {
-                const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", "xi-api-key": ELEVEN_API_KEY },
-                        body: JSON.stringify({ text: texto, model_id: "eleven_multilingual_v2" })
-                    });
-                    if (response.ok) {
-                        const audioBlob = await response.blob();
-                        const audio = new Audio(URL.createObjectURL(audioBlob));
-                        audio.play();
-                        return;
-                    }
-                } catch (e) { }
-            }
-
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(texto);
             utterance.lang = 'es-MX';
@@ -125,40 +105,45 @@
         }
 
         function inicializarSistema() {
-            API_KEY = localStorage.getItem("jarvis_api_key");
-            ELEVEN_API_KEY = localStorage.getItem("eleven_api_key");
-            VOICE_ID = localStorage.getItem("eleven_voice_id");
+            GROQ_API_KEY = localStorage.getItem("jarvis_groq_key");
 
-            if (API_KEY) {
-                pasoConfig = 0;
+            if (GROQ_API_KEY) {
+                necesitaKey = false;
                 userInput.placeholder = "Hable con J.A.R.V.I.S...";
-                setTimeout(() => { hablar("Sistemas en línea, señor. ¿En qué puedo ayudarle?"); }, 500);
+                setTimeout(() => { hablar("Sistemas centrales conectados mediante Groq, señor. ¿Qué desea?"); }, 500);
             } else {
-                pasoConfig = 1;
-                userInput.placeholder = "Pegue su API Key de Gemini...";
-                logPantalla("SISTEMA: Ingrese la API Key de Google Gemini para iniciar.", "system-text");
+                necesitaKey = true;
+                userInput.placeholder = "Pegue su API Key de Groq...";
+                logPantalla("SISTEMA: Ingrese la API Key de Groq (empieza con gsk_) para iniciar el cerebro.", "system-text");
             }
         }
 
-        async function preguntarAGemini(preguntaUsuario) {
-            // URL ACTUALIZADA AL MOTOR FLASH RECIENTE
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+        async function preguntarAGroq(preguntaUsuario) {
+            const url = "https://api.groq.com/openai/v1/chat/completions";
             try {
                 const response = await fetch(url, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${GROQ_API_KEY}`
+                    },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: "Actúa como J.A.R.V.I.S. de Iron Man. Habla en español, sé conciso y dirígete al usuario como 'señor'. Sin usar markdown. Pregunta: " + preguntaUsuario }] }]
+                        model: "llama3-8b-8192",
+                        messages: [
+                            { role: "system", content: "Actúa exactamente como J.A.R.V.I.S., el asistente de Iron Man. Habla siempre en español, de forma muy concisa, educada y dirígete al usuario como 'señor'. Nunca uses formatos markdown como asteriscos o negritas." },
+                            { role: "user", content: preguntaUsuario }
+                        ]
                     })
                 });
+                
                 const data = await response.json();
                 if (data.error) {
-                    logPantalla(`ERROR GOOGLE: ${data.error.message}`, "error-text");
-                } else if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    hablar(data.candidates[0].content.parts[0].text);
+                    logPantalla(`ERROR GROQ: ${data.error.message}`, "error-text");
+                } else if (data.choices && data.choices[0].message.content) {
+                    hablar(data.choices[0].message.content.trim());
                 }
             } catch (error) {
-                logPantalla("ERROR: Falla de conexión con los servidores.", "error-text");
+                logPantalla("ERROR: No se pudo conectar con el servidor de Groq.", "error-text");
             }
         }
 
@@ -166,54 +151,31 @@
             let texto = userInput.value.trim();
             if (texto === "") return;
 
-            if (pasoConfig === 1) {
-                API_KEY = texto;
-                localStorage.setItem("jarvis_api_key", texto);
+            // Si aún no tenemos la llave de Groq
+            if (necesitaKey) {
+                GROQ_API_KEY = texto;
+                localStorage.setItem("jarvis_groq_key", texto);
                 userInput.value = "";
-                pasoConfig = 2;
-                userInput.placeholder = "API Key de ElevenLabs (o escriba 'saltar')...";
-                logPantalla("SISTEMA: Key de Gemini guardada. Ingrese Key de ElevenLabs para voz real (o escriba 'saltar').", "system-text");
-                return;
-            }
-            if (pasoConfig === 2) {
-                userInput.value = "";
-                if (texto.toLowerCase() !== "saltar") {
-                    ELEVEN_API_KEY = texto;
-                    localStorage.setItem("eleven_api_key", texto);
-                    pasoConfig = 3;
-                    userInput.placeholder = "Pegue el Voice ID de Jarvis...";
-                    logPantalla("SISTEMA: Key de ElevenLabs guardada. Ingrese el Voice ID.", "system-text");
-                } else {
-                    pasoConfig = 0;
-                    userInput.placeholder = "Hable con J.A.R.V.I.S...";
-                    logPantalla("SISTEMA: Configuración terminada sin voz avanzada.", "system-text");
-                    hablar("Sistemas listos con voz local, señor.");
-                }
-                return;
-            }
-            if (pasoConfig === 3) {
-                VOICE_ID = texto;
-                localStorage.setItem("eleven_voice_id", texto);
-                userInput.value = "";
-                pasoConfig = 0;
+                necesitaKey = false;
                 userInput.placeholder = "Hable con J.A.R.V.I.S...";
-                logPantalla("SISTEMA: Configuración de voz completada con éxito.", "system-text");
-                hablar("Todos los sistemas de voz e inteligencia en línea, señor.");
+                logPantalla("SISTEMA: Cerebro conectado con éxito.", "system-text");
+                hablar("Todos los sistemas principales en línea, señor.");
                 return;
             }
 
+            // Modo Chat Normal
             logPantalla("TÚ: " + texto, "user-text");
             userInput.value = "";
-            preguntarAGemini(texto);
+            preguntarAGroq(texto);
         }
 
         resetBtn.addEventListener('click', () => {
             localStorage.clear();
-            API_KEY = ""; ELEVEN_API_KEY = ""; VOICE_ID = "";
+            GROQ_API_KEY = "";
             consoleDiv.innerHTML = "";
-            pasoConfig = 1;
-            userInput.placeholder = "Pegue su API Key de Gemini...";
-            logPantalla("SISTEMA: Memoria limpia. Ingrese la API Key de Gemini.", "system-text");
+            necesitaKey = true;
+            userInput.placeholder = "Pegue su API Key de Groq...";
+            logPantalla("SISTEMA: Memoria limpia. Ingrese la nueva API Key de Groq.", "system-text");
         });
 
         sendBtn.addEventListener('click', mandarComando);
